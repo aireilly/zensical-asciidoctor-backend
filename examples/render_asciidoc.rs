@@ -11,6 +11,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use regex::Regex;
+
 use zensical_asciidoctor_backend::config::Config;
 use zensical_asciidoctor_backend::html::{HtmlProcessor, TocEntry};
 use zensical_asciidoctor_backend::renderer::Renderer;
@@ -31,6 +33,36 @@ struct NavEntry {
     is_active: bool,
 }
 
+/// Hashed asset filenames discovered from the Zensical-built site.
+struct AssetPaths {
+    main_css: String,
+    palette_css: String,
+    bundle_js: String,
+    search_worker_js: String,
+}
+
+/// Discover hashed asset filenames by reading a Zensical-built page.
+fn discover_assets(site_dir: &Path) -> AssetPaths {
+    // Read any Zensical-generated page to extract the hashed filenames
+    let reference_page = site_dir.join("index.html");
+    let html = fs::read_to_string(&reference_page)
+        .expect("failed to read Zensical index.html — run `zensical build` first");
+
+    let find = |pattern: &str| -> String {
+        let re = Regex::new(pattern).expect("valid regex");
+        re.captures(&html)
+            .unwrap_or_else(|| panic!("could not find asset matching {pattern} in index.html"))[1]
+            .to_string()
+    };
+
+    AssetPaths {
+        main_css: find(r#"stylesheets/modern/(main\.[a-f0-9]+\.min\.css)"#),
+        palette_css: find(r#"stylesheets/modern/(palette\.[a-f0-9]+\.min\.css)"#),
+        bundle_js: find(r#"javascripts/(bundle\.[a-f0-9]+\.min\.js)"#),
+        search_worker_js: find(r#"javascripts/workers/(search\.[a-f0-9]+\.min\.js)"#),
+    }
+}
+
 fn main() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let docs_dir = manifest_dir.join("demo/docs");
@@ -49,6 +81,9 @@ fn main() {
 
     let renderer = Renderer::new(&config);
     let processor = HtmlProcessor::new();
+
+    // Discover hashed asset filenames from the Zensical-built site
+    let assets = discover_assets(&site_dir);
 
     // Find all .adoc files in docs/
     let entries: Vec<_> = fs::read_dir(&docs_dir)
@@ -94,7 +129,7 @@ fn main() {
 
     // Write HTML — pages go directly into site/<stem>/index.html
     for (i, page) in pages.iter().enumerate() {
-        let full_html = build_full_page(page, &pages, i);
+        let full_html = build_full_page(page, &pages, i, &assets);
 
         let out_dir = site_dir.join(&page.file_stem);
         fs::create_dir_all(&out_dir).expect("failed to create output dir");
@@ -137,7 +172,12 @@ fn title_case(s: &str) -> String {
 }
 
 /// Build the complete HTML page matching Zensical's output exactly.
-fn build_full_page(page: &RenderedPage, all_pages: &[RenderedPage], current_idx: usize) -> String {
+fn build_full_page(
+    page: &RenderedPage,
+    all_pages: &[RenderedPage],
+    current_idx: usize,
+    assets: &AssetPaths,
+) -> String {
     // AsciiDoc pages are at site/<stem>/, so assets are at ../
     let base_path = "..";
     let title = &page.title;
@@ -181,12 +221,12 @@ fn build_full_page(page: &RenderedPage, all_pages: &[RenderedPage], current_idx:
     <link rel="icon" href="{base_path}/assets/images/favicon.png">
     <meta name="generator" content="zensical-0.0.23">
     <title>{title} - Documentation</title>
-    <link rel="stylesheet" href="{base_path}/assets/stylesheets/modern/main.1e989742.min.css">
-    <link rel="stylesheet" href="{base_path}/assets/stylesheets/modern/palette.dfe2e883.min.css">
+    <link rel="stylesheet" href="{base_path}/assets/stylesheets/modern/{main_css}">
+    <link rel="stylesheet" href="{base_path}/assets/stylesheets/modern/{palette_css}">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
     <style>:root{{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}}</style>
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{{try{{a.setItem(_.pathname+"."+e,JSON.stringify(t))}}catch(e){{}}}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,a=__md_scope)=>JSON.parse(t.getItem(a.pathname+"."+e)),__md_set=(e,t,a=localStorage,_=__md_scope)=>{{try{{a.setItem(_.pathname+"."+e,JSON.stringify(t))}}catch(e){{}}}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
   </head>
   <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -232,7 +272,14 @@ fn build_full_page(page: &RenderedPage, all_pages: &[RenderedPage], current_idx:
         <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
           <button type="button" class="md-search__button">Search</button>
         </div>
-        <div class="md-header__source"></div>
+        <div class="md-header__source">
+          <a href="https://github.com/aireilly/zensical-asciidoctor-backend" title="Go to repository" class="md-source" data-md-component="source">
+            <div class="md-source__icon md-icon">
+              {ICON_GITHUB}
+            </div>
+            <div class="md-source__repository">GitHub</div>
+          </a>
+        </div>
       </nav>
     </header>
 
@@ -287,6 +334,11 @@ fn build_full_page(page: &RenderedPage, all_pages: &[RenderedPage], current_idx:
               Made with
               <a href="https://zensical.org/" target="_blank" rel="noopener">Zensical</a>
             </div>
+            <div class="md-social">
+              <a href="https://github.com/aireilly/zensical-asciidoctor-backend" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+                {ICON_GITHUB}
+              </a>
+            </div>
           </div>
         </div>
       </footer>
@@ -296,12 +348,16 @@ fn build_full_page(page: &RenderedPage, all_pages: &[RenderedPage], current_idx:
       <div class="md-dialog__inner md-typeset"></div>
     </div>
 
-    <script id="__config" type="application/json">{{"annotate":null,"base":"{base_path}","features":["announce.dismiss","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"{base_path}/assets/javascripts/workers/search.e2d2d235.min.js","tags":null,"translations":{{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"}},"version":null}}</script>
-    <script src="{base_path}/assets/javascripts/bundle.5fcf0de6.min.js"></script>
+    <script id="__config" type="application/json">{{"annotate":null,"base":"{base_path}","features":["announce.dismiss","content.code.annotate","content.code.copy","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.top","navigation.tracking","search.highlight"],"search":"{base_path}/assets/javascripts/workers/{search_worker_js}","tags":null,"translations":{{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"}},"version":null}}</script>
+    <script src="{base_path}/assets/javascripts/{bundle_js}"></script>
   </body>
 </html>"##,
         title = title,
         base_path = base_path,
+        main_css = assets.main_css,
+        palette_css = assets.palette_css,
+        bundle_js = assets.bundle_js,
+        search_worker_js = assets.search_worker_js,
         left_nav_html = left_nav_html,
         right_toc_html = right_toc_html,
         content = page.content,
@@ -312,6 +368,7 @@ fn build_full_page(page: &RenderedPage, all_pages: &[RenderedPage], current_idx:
         ICON_MOON = ICON_MOON,
         ICON_SEARCH = ICON_SEARCH,
         ICON_ARROW_UP = ICON_ARROW_UP,
+        ICON_GITHUB = ICON_GITHUB,
     )
 }
 
@@ -329,6 +386,19 @@ fn build_left_nav(nav_entries: &[NavEntry], current_toc: &[TocEntry]) -> String 
         r#"                    </a>
                     Documentation
                   </label>
+                  <div class="md-nav__source">
+                    <a href="https://github.com/aireilly/zensical-asciidoctor-backend" title="Go to repository" class="md-source" data-md-component="source">
+                      <div class="md-source__icon md-icon">
+"#,
+    );
+    html.push_str("                        ");
+    html.push_str(ICON_GITHUB);
+    html.push('\n');
+    html.push_str(
+        r#"                      </div>
+                      <div class="md-source__repository">GitHub</div>
+                    </a>
+                  </div>
                   <ul class="md-nav__list" data-md-scrollfix>
 "#,
     );
@@ -650,3 +720,5 @@ const ICON_ARROW_UP: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" fill="non
 const ICON_ARROW_LEFT: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>"#;
 
 const ICON_ARROW_RIGHT: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>"#;
+
+const ICON_GITHUB: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>"##;
