@@ -77,8 +77,8 @@ Tables are wrapped with Material CSS classes for responsive styling.
 
 Images are converted to HTML5 `<figure>` elements.
 
-.The Zensical build pipeline
-image::pipeline.png[Build pipeline diagram,width=600]
+.An orange kitten
+image::orange_kitten.png[An adorable orange kitten,width=600]
 
 == Cross-References
 

@@ -88,4 +88,4 @@ This is raw HTML passed through from AsciiDoc.
 == Links
 
 * External: https://zensical.org[Zensical website]
-* Cross-reference: xref:index.adoc[Back to AsciiDoc index]
+* Cross-reference: xref:asciidoc.adoc[Back to AsciiDoc index]

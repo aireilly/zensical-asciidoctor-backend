@@ -196,8 +196,8 @@ impl HtmlProcessor {
         let doc = Html::parse_fragment(html);
         let mut meta = DocMeta::default();
 
-        let sel_h1_sect0 = Selector::parse("h1.sect0").expect("valid selector");
-        if let Some(el) = doc.select(&sel_h1_sect0).next() {
+        let sel_h1 = Selector::parse("h1").expect("valid selector");
+        if let Some(el) = doc.select(&sel_h1).next() {
             let text: String = el.text().collect::<Vec<_>>().join(" ").trim().to_string();
             if !text.is_empty() {
                 meta.title = Some(text);
@@ -268,13 +268,9 @@ impl HtmlProcessor {
         let mut stack: Vec<(u8, Vec<usize>)> = Vec::new();
 
         for el in doc.select(&heading_sel) {
-            // Skip h1.sect0 (document title).
+            // Skip h1 headings (document title).
             if el.value().name() == "h1" {
-                if let Some(cls) = el.value().attr("class") {
-                    if cls.split_whitespace().any(|c| c == "sect0") {
-                        continue;
-                    }
-                }
+                continue;
             }
 
             let level = el.value().name()[1..]
@@ -540,6 +536,60 @@ impl HtmlProcessor {
             "<div class=\"md-typeset__table\">",
         );
         result = result.replace("</div></div>", "</div>");
+
+        // Strip Asciidoctor-specific classes from table elements so Material
+        // styles apply cleanly. Remove class attributes entirely from table,
+        // th, td elements (Asciidoctor classes like tableblock, frame-all,
+        // grid-all, halign-left, valign-top fight Material's styling).
+        let table_class_re = Regex::new(
+            r#"<table\s+class="[^"]*tableblock[^"]*"([^>]*)>"#,
+        )
+        .expect("valid regex");
+        result = table_class_re
+            .replace_all(&result, "<table$1>")
+            .into_owned();
+
+        let th_class_re = Regex::new(
+            r#"<th\s+class="[^"]*tableblock[^"]*">"#,
+        )
+        .expect("valid regex");
+        result = th_class_re
+            .replace_all(&result, "<th>")
+            .into_owned();
+
+        let td_class_re = Regex::new(
+            r#"<td\s+class="[^"]*tableblock[^"]*">"#,
+        )
+        .expect("valid regex");
+        result = td_class_re
+            .replace_all(&result, "<td>")
+            .into_owned();
+
+        // Unwrap <p class="tableblock">...</p> inside cells — Material doesn't
+        // expect paragraph wrappers inside table cells.
+        let p_tableblock_re = Regex::new(
+            r#"<p\s+class="tableblock">(.*?)</p>"#,
+        )
+        .expect("valid regex");
+        result = p_tableblock_re
+            .replace_all(&result, "$1")
+            .into_owned();
+
+        // Remove colgroup/col elements — let Material CSS handle column widths.
+        let colgroup_re = Regex::new(
+            r#"(?is)<colgroup>.*?</colgroup>"#,
+        )
+        .expect("valid regex");
+        result = colgroup_re.replace_all(&result, "").into_owned();
+
+        // Convert <caption class="title">Table N. ...</caption> to plain <caption>.
+        let caption_class_re = Regex::new(
+            r#"<caption\s+class="title">(?:Table\s+\d+\.\s*)?(.*?)</caption>"#,
+        )
+        .expect("valid regex");
+        result = caption_class_re
+            .replace_all(&result, "<caption>$1</caption>")
+            .into_owned();
 
         result
     }

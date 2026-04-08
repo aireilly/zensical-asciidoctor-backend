@@ -19,6 +19,7 @@ zrx = { git = "https://github.com/zensical/zrx.git", tag = "v0.0.17" }
 [dev-dependencies]
 insta = "1"
 pretty_assertions = "1"
+serde_json = "1"
 
 [features]
 default = []

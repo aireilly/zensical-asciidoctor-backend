@@ -1089,6 +1089,7 @@ dependencies = [
  "pretty_assertions",
  "regex",
  "scraper",
+ "serde_json",
  "thiserror",
  "tracing",
  "zrx",
