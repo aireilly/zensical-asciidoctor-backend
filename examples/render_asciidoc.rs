@@ -20,9 +20,20 @@ use zensical_asciidoctor_backend::renderer::Renderer;
 /// Asciidoctor structural wrapper classes/IDs to unwrap.
 /// These divs have no visual meaning — they just group sections.
 const STRUCTURAL_CLASSES: &[&str] = &[
-    "sect1", "sect2", "sect3", "sect4", "sect5", "sect6",
-    "sectionbody", "paragraph", "ulist", "olist", "dlist",
-    "listingblock", "content", "imageblock",
+    "sect1",
+    "sect2",
+    "sect3",
+    "sect4",
+    "sect5",
+    "sect6",
+    "sectionbody",
+    "paragraph",
+    "ulist",
+    "olist",
+    "dlist",
+    "listingblock",
+    "content",
+    "imageblock",
 ];
 
 const STRUCTURAL_IDS: &[&str] = &["preamble"];
@@ -73,10 +84,7 @@ fn main() {
         };
 
         let processed = processor.process(&raw_html, Some(&rel_path));
-        let title = processed
-            .meta
-            .title
-            .unwrap_or_else(|| file_stem.clone());
+        let title = processed.meta.title.unwrap_or_else(|| file_stem.clone());
 
         // Strip asciidoctor structural wrappers and convert headings to
         // Markdown so Zensical's TOC and Markdown parser work correctly.
@@ -163,10 +171,8 @@ fn is_structural_div(line: &str) -> bool {
 
 /// Replace `<h1-6 id="...">...</h1-6>` with Markdown headings.
 fn headings_to_markdown(html: &str) -> String {
-    let heading_re =
-        Regex::new(r#"<h([1-6])\s+id="([^"]*)">(.*?)</h[1-6]>"#).unwrap();
-    let anchor_re =
-        Regex::new(r#"<a class="anchor"[^>]*></a>\s*"#).unwrap();
+    let heading_re = Regex::new(r#"<h([1-6])\s+id="([^"]*)">(.*?)</h[1-6]>"#).unwrap();
+    let anchor_re = Regex::new(r#"<a class="anchor"[^>]*></a>\s*"#).unwrap();
 
     heading_re
         .replace_all(html, |caps: &regex::Captures| {
