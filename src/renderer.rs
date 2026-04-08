@@ -25,7 +25,7 @@ pub enum RendererError {
     Io(#[from] std::io::Error),
 }
 
-/// Wraps configuration and renders AsciiDoc files via the `asciidoctor` CLI.
+/// Wraps configuration and renders `AsciiDoc` files via the `asciidoctor` CLI.
 #[derive(Clone, Debug)]
 pub struct Renderer {
     cmd: String,
@@ -37,6 +37,7 @@ pub struct Renderer {
 
 impl Renderer {
     /// Create a new `Renderer` from the given configuration.
+    #[must_use] 
     pub fn new(config: &Config) -> Self {
         let mut attributes: Vec<(String, String)> = config
             .attributes
@@ -59,6 +60,7 @@ impl Renderer {
     ///
     /// The returned vector includes the command name as the first element,
     /// followed by all flags, options, and the file path.
+    #[must_use] 
     pub fn build_args(&self, src_path: &str) -> Vec<String> {
         let mut args = vec![
             self.cmd.clone(),
@@ -89,12 +91,19 @@ impl Renderer {
         args
     }
 
-    /// Render the AsciiDoc file at `src_path` to HTML.
+    /// Render the `AsciiDoc` file at `src_path` to HTML.
     ///
     /// On success, returns the HTML string produced by asciidoctor.
     ///
     /// When `fail_on_error` is false, errors are caught and returned as an
     /// inline HTML error block instead of propagating.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RendererError::NotFound`] if the asciidoctor binary cannot be found,
+    /// [`RendererError::Failed`] if asciidoctor exits with a non-zero status, or
+    /// [`RendererError::Io`] for other I/O errors. Errors are only returned when
+    /// `fail_on_error` is true.
     pub fn render(&self, src_path: &str) -> Result<String, RendererError> {
         let args = self.build_args(src_path);
 

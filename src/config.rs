@@ -1,9 +1,9 @@
-//! Configuration for the AsciiDoc module.
+//! Configuration for the `AsciiDoc` module.
 
 use std::collections::HashMap;
 use std::fmt;
 
-/// Configuration for the AsciiDoc module.
+/// Configuration for the `AsciiDoc` module.
 #[derive(Clone, Debug)]
 pub struct Config {
     /// Path to asciidoctor binary.

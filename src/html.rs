@@ -8,6 +8,8 @@
 //! normalises the DOM (e.g. inserting `<tbody>`) which makes string-replacement
 //! against the original HTML unreliable.
 
+use std::fmt::Write as _;
+
 use regex::Regex;
 use scraper::{Html, Selector};
 
@@ -47,6 +49,11 @@ pub struct ProcessedDoc {
 ///
 /// Strips non-alphanumeric characters (except spaces, underscores, hyphens),
 /// lowercases, and replaces whitespace / underscores with hyphens.
+///
+/// # Panics
+///
+/// Panics if the internal regex patterns are invalid (this should never happen).
+#[must_use]
 pub fn slugify(text: &str) -> String {
     let t = text.trim().to_lowercase();
     let nonword = Regex::new(r"[^0-9A-Za-z _-]+").expect("valid regex");
@@ -110,10 +117,7 @@ fn relative_path(to: &str, from_dir: &str) -> String {
         .count();
 
     let ups = from_parts.len() - common;
-    let mut result = Vec::new();
-    for _ in 0..ups {
-        result.push("..");
-    }
+    let mut result: Vec<&str> = vec![".."; ups];
     for part in &to_parts[common..] {
         result.push(part);
     }
@@ -138,8 +142,16 @@ fn strip_tags(html: &str) -> String {
 #[derive(Clone, Debug)]
 pub struct HtmlProcessor;
 
+impl Default for HtmlProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[allow(clippy::unused_self)]
 impl HtmlProcessor {
     /// Create a new processor.
+    #[must_use]
     pub fn new() -> Self {
         Self
     }
@@ -148,6 +160,7 @@ impl HtmlProcessor {
     ///
     /// `page_rel_path` is the page's source-relative path (e.g.
     /// `"guides/install.adoc"`), used to resolve cross-reference URLs.
+    #[must_use] 
     pub fn process(&self, html: &str, page_rel_path: Option<&str>) -> ProcessedDoc {
         let mut result = html.to_string();
 
@@ -206,23 +219,22 @@ impl HtmlProcessor {
     // -- Heading IDs (regex) ------------------------------------------------
 
     fn ensure_heading_ids(&self, html: &str) -> String {
-        let has_id = Regex::new(r#"(?i)\bid\s*="#).expect("valid regex");
+        let has_id = Regex::new(r"(?i)\bid\s*=").expect("valid regex");
         let mut result = html.to_string();
 
         // Process each heading level separately to avoid backreference issues.
         for level in 1..=6u8 {
-            let tag = format!("h{}", level);
+            let tag = format!("h{level}");
             // Match <hN ...>...</hN> for this specific level.
             let pattern = format!(
-                r#"(?is)<({tag})(\s[^>]*)?>(.+?)</{tag}>"#,
-                tag = tag
+                r"(?is)<({tag})(\s[^>]*)?>(.+?)</{tag}>"
             );
             let re = Regex::new(&pattern).expect("valid regex");
 
             result = re
                 .replace_all(&result, |caps: &regex::Captures| {
                     let tag_name = &caps[1];
-                    let attrs = caps.get(2).map(|m| m.as_str()).unwrap_or("");
+                    let attrs = caps.get(2).map_or("", |m| m.as_str());
                     let inner = &caps[3];
 
                     if has_id.is_match(attrs) {
@@ -234,8 +246,7 @@ impl HtmlProcessor {
                             caps[0].to_string()
                         } else {
                             format!(
-                                "<{} id=\"{}\"{}>{}</{}>",
-                                tag_name, id, attrs, inner, tag_name
+                                "<{tag_name} id=\"{id}\"{attrs}>{inner}</{tag_name}>"
                             )
                         }
                     }
@@ -317,6 +328,16 @@ impl HtmlProcessor {
         )
         .expect("valid regex");
 
+        // Pre-compile regexes used inside the loop.
+        let title_re = Regex::new(
+            r#"(?is)<td\s+class="icon"[^>]*>.*?<div\s+class="title"[^>]*>\s*(.*?)\s*</div>"#,
+        )
+        .expect("valid regex");
+        let content_re = Regex::new(
+            r#"(?is)<td\s+class="content"[^>]*>(.*?)</td>"#,
+        )
+        .expect("valid regex");
+
         let mut result = html.to_string();
         // Process repeatedly until no more admonition blocks are found.
         loop {
@@ -348,33 +369,20 @@ impl HtmlProcessor {
             };
 
             // Extract title from the icon td's .title div.
-            let title_re = Regex::new(
-                r#"(?is)<td\s+class="icon"[^>]*>.*?<div\s+class="title"[^>]*>\s*(.*?)\s*</div>"#,
-            )
-            .expect("valid regex");
             let title_text = title_re
-                .captures(block_html)
-                .map(|c| c[1].to_string())
-                .unwrap_or_else(|| capitalize(&kind));
+                .captures(block_html).map_or_else(|| capitalize(&kind), |c| c[1].to_string());
 
             // Extract content from td.content.
-            let content_re = Regex::new(
-                r#"(?is)<td\s+class="content"[^>]*>(.*?)</td>"#,
-            )
-            .expect("valid regex");
             let content = content_re
                 .captures(block_html)
                 .map(|c| c[1].trim().to_string())
                 .unwrap_or_default();
 
             let replacement = format!(
-                "<div class=\"admonition {kind}\">\
-                 <p class=\"admonition-title\">{title}</p>\
+                "<div class=\"admonition {material_kind}\">\
+                 <p class=\"admonition-title\">{title_text}</p>\
                  {content}\
                  </div>",
-                kind = material_kind,
-                title = title_text,
-                content = content,
             );
 
             result.replace_range(start_pos..end_pos, &replacement);
@@ -387,7 +395,7 @@ impl HtmlProcessor {
 
     fn transform_callout_lists(&self, html: &str) -> String {
         let start_re = Regex::new(r#"<div\s+class="colist"[^>]*>"#).expect("valid regex");
-        let tr_re = Regex::new(r#"(?is)<tr[^>]*>\s*<td[^>]*>.*?</td>\s*<td[^>]*>(.*?)</td>\s*</tr>"#)
+        let tr_re = Regex::new(r"(?is)<tr[^>]*>\s*<td[^>]*>.*?</td>\s*<td[^>]*>(.*?)</td>\s*</tr>")
             .expect("valid regex");
 
         let mut result = html.to_string();
@@ -423,7 +431,7 @@ impl HtmlProcessor {
 
             let mut ol = String::from("<ol class=\"colist\">");
             for item in &items {
-                ol.push_str(&format!("<li>{}</li>", item));
+                let _ = write!(ol, "<li>{item}</li>");
             }
             ol.push_str("</ol>");
 
@@ -437,7 +445,7 @@ impl HtmlProcessor {
 
     fn clean_callout_markers(&self, html: &str) -> String {
         let re = Regex::new(
-            r#"(</span>)\s*(?:\(\d+\)|<\d+>|&lt;\d+&gt;)"#,
+            r"(</span>)\s*(?:\(\d+\)|<\d+>|&lt;\d+&gt;)",
         )
         .expect("valid regex");
 
@@ -454,6 +462,14 @@ impl HtmlProcessor {
             r#"<div\s+class="tableblock"[^>]*>"#,
         )
         .expect("valid regex");
+
+        // Pre-compile regexes used inside the loop.
+        let title_re = Regex::new(
+            r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#,
+        )
+        .expect("valid regex");
+        let inner_table_re = Regex::new(r#"(?is)(<table\s+class="[^"]*tableblock[^"]*"[^>]*>)(.*?</table>)"#)
+            .expect("valid regex");
 
         // Process outer div.tableblock wrappers.
         loop {
@@ -474,10 +490,6 @@ impl HtmlProcessor {
             let block_html = result[start_pos..end_pos].to_string();
 
             // Extract title if present.
-            let title_re = Regex::new(
-                r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#,
-            )
-            .expect("valid regex");
             let title_text = title_re
                 .captures(&block_html)
                 .map(|c| strip_tags(&c[1]).trim().to_string());
@@ -485,25 +497,21 @@ impl HtmlProcessor {
             // Remove the title div from the block.
             let without_title = title_re.replace(&block_html, "").to_string();
 
-            // Find the table inside.
-            let table_re = Regex::new(r#"(?is)(<table\s+class="[^"]*tableblock[^"]*"[^>]*>)(.*?</table>)"#)
-                .expect("valid regex");
-
-            let replacement = if let Some(tcap) = table_re.captures(&without_title) {
+            let replacement = if let Some(tcap) = inner_table_re.captures(&without_title) {
                 let table_open = &tcap[1];
                 let table_rest = &tcap[2];
 
                 let new_table = if let Some(ref title) = title_text {
-                    if !title.is_empty() {
-                        format!("{}<caption>{}</caption>{}", table_open, title, table_rest)
+                    if title.is_empty() {
+                        format!("{table_open}{table_rest}")
                     } else {
-                        format!("{}{}", table_open, table_rest)
+                        format!("{table_open}<caption>{title}</caption>{table_rest}")
                     }
                 } else {
-                    format!("{}{}", table_open, table_rest)
+                    format!("{table_open}{table_rest}")
                 };
 
-                format!("<div class=\"md-typeset__table\">{}</div>", new_table)
+                format!("<div class=\"md-typeset__table\">{new_table}</div>")
             } else {
                 // No table found, leave as is but we need to avoid infinite loop.
                 break;
@@ -541,6 +549,16 @@ impl HtmlProcessor {
     fn transform_figures(&self, html: &str) -> String {
         let start_re = Regex::new(r#"<div\s+class="imageblock"[^>]*>"#).expect("valid regex");
 
+        // Pre-compile regexes used inside the loop.
+        let content_re = Regex::new(
+            r#"(?is)<div\s+class="content"[^>]*>(.*?)</div>"#,
+        )
+        .expect("valid regex");
+        let fig_title_re = Regex::new(
+            r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#,
+        )
+        .expect("valid regex");
+
         let mut result = html.to_string();
 
         loop {
@@ -561,10 +579,6 @@ impl HtmlProcessor {
             let block_html = result[start_pos..end_pos].to_string();
 
             // Extract content div's inner HTML.
-            let content_re = Regex::new(
-                r#"(?is)<div\s+class="content"[^>]*>(.*?)</div>"#,
-            )
-            .expect("valid regex");
             let content_inner = match content_re.captures(&block_html) {
                 Some(c) => c[1].to_string(),
                 None => {
@@ -574,30 +588,23 @@ impl HtmlProcessor {
             };
 
             // Extract title if present.
-            let title_re = Regex::new(
-                r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#,
-            )
-            .expect("valid regex");
-            let title_text = title_re
+            let title_text = fig_title_re
                 .captures(&block_html)
                 .map(|c| strip_tags(&c[1]).trim().to_string());
 
             let figure = if let Some(ref title) = title_text {
-                if !title.is_empty() {
+                if title.is_empty() {
                     format!(
-                        "<figure class=\"adoc-figure\"><figcaption>{}</figcaption>{}</figure>",
-                        title, content_inner
+                        "<figure class=\"adoc-figure\">{content_inner}</figure>"
                     )
                 } else {
                     format!(
-                        "<figure class=\"adoc-figure\">{}</figure>",
-                        content_inner
+                        "<figure class=\"adoc-figure\"><figcaption>{title}</figcaption>{content_inner}</figure>"
                     )
                 }
             } else {
                 format!(
-                    "<figure class=\"adoc-figure\">{}</figure>",
-                    content_inner
+                    "<figure class=\"adoc-figure\">{content_inner}</figure>"
                 )
             };
 
@@ -618,7 +625,7 @@ impl HtmlProcessor {
             let suffix = &caps[3];
 
             let new_href = rewrite_href(href, page_rel_path);
-            format!("{}href=\"{}\"{}",  prefix, new_href, suffix)
+            format!("{prefix}href=\"{new_href}\"{suffix}")
         })
         .into_owned()
     }
@@ -652,10 +659,10 @@ fn find_matching_close_div(html: &str, content_start: usize) -> Option<usize> {
             if html[i..].starts_with("<div") {
                 // Check it's actually a div tag (not <divx or similar)
                 let after = html.as_bytes().get(i + 4).copied();
-                if matches!(after, Some(b' ') | Some(b'>') | Some(b'/') | Some(b'\n') | Some(b'\r') | Some(b'\t')) {
+                if matches!(after, Some(b' ' | b'>' | b'/' | b'\n' | b'\r' | b'\t')) {
                     // Check if it's self-closing.
                     if let Some(close) = html[i..].find('>') {
-                        let tag = &html[i..i + close + 1];
+                        let tag = &html[i..=(i + close)];
                         if !tag.ends_with("/>") {
                             depth += 1;
                         }
@@ -670,7 +677,7 @@ fn find_matching_close_div(html: &str, content_start: usize) -> Option<usize> {
 }
 
 /// Navigate into a nested `TocEntry` tree using an index path.
-fn get_entry_mut<'a>(items: &'a mut Vec<TocEntry>, path: &[usize]) -> &'a mut TocEntry {
+fn get_entry_mut<'a>(items: &'a mut [TocEntry], path: &[usize]) -> &'a mut TocEntry {
     assert!(!path.is_empty());
     let mut current = &mut items[path[0]];
     for &idx in &path[1..] {
@@ -717,12 +724,12 @@ fn rewrite_href(href: &str, page_rel_path: Option<&str>) -> String {
     };
 
     // Convert extension to trailing slash.
-    let mut converted = if path_only.ends_with("/index.html") {
-        path_only[..path_only.len() - "index.html".len()].to_string()
-    } else if path_only.ends_with(".html") {
-        format!("{}/", &path_only[..path_only.len() - ".html".len()])
-    } else if path_only.ends_with(".adoc") {
-        format!("{}/", &path_only[..path_only.len() - ".adoc".len()])
+    let mut converted = if let Some(stripped) = path_only.strip_suffix("/index.html") {
+        format!("{stripped}/")
+    } else if let Some(stripped) = path_only.strip_suffix(".html") {
+        format!("{stripped}/")
+    } else if let Some(stripped) = path_only.strip_suffix(".adoc") {
+        format!("{stripped}/")
     } else {
         path_only.to_string()
     };
@@ -736,7 +743,7 @@ fn rewrite_href(href: &str, page_rel_path: Option<&str>) -> String {
             let joined = if src_dir.is_empty() {
                 converted.clone()
             } else {
-                format!("{}/{}", src_dir, converted)
+                format!("{src_dir}/{converted}")
             };
             let mut abs_path = normalize_path(&joined);
             if had_trailing_slash && !abs_path.ends_with('/') {
@@ -749,7 +756,7 @@ fn rewrite_href(href: &str, page_rel_path: Option<&str>) -> String {
             } else if src_dir.is_empty() {
                 page_stem.to_string()
             } else {
-                format!("{}/{}", src_dir, page_stem)
+                format!("{src_dir}/{page_stem}")
             };
 
             let abs_clean = abs_path.trim_end_matches('/');

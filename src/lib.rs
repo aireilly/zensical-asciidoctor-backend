@@ -1,6 +1,6 @@
-//! Zensical module for AsciiDoc support.
+//! Zensical module for `AsciiDoc` support.
 //!
-//! This crate provides a Zensical module that renders AsciiDoc files using
+//! This crate provides a Zensical module that renders `AsciiDoc` files using
 //! the `asciidoctor` CLI and post-processes the HTML output for Material
 //! theme compatibility.
 
@@ -35,7 +35,7 @@ impl Value for FilePath {}
 // RenderedDoc
 // ---------------------------------------------------------------------------
 
-/// A rendered AsciiDoc document ready for consumption by downstream modules.
+/// A rendered `AsciiDoc` document ready for consumption by downstream modules.
 ///
 /// Implements `zrx::stream::Value` so it can flow through zrx streams.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -52,13 +52,14 @@ impl Value for RenderedDoc {}
 // AsciiDoc module
 // ---------------------------------------------------------------------------
 
-/// Zensical module that renders AsciiDoc files via Asciidoctor.
+/// Zensical module that renders `AsciiDoc` files via Asciidoctor.
 pub struct AsciiDoc {
     config: Config,
 }
 
 impl AsciiDoc {
     /// Create a new `AsciiDoc` module with the given configuration.
+    #[must_use] 
     pub fn new(config: Config) -> Self {
         Self { config }
     }
@@ -69,7 +70,9 @@ impl Module for AsciiDoc {
         let files = ctx.add::<FilePath>();
 
         let adoc_files = files.filter(|path: &FilePath| {
-            Ok(path.0.ends_with(".adoc"))
+            Ok(std::path::Path::new(&path.0)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("adoc")))
         });
 
         let config = self.config.clone();
@@ -112,7 +115,7 @@ impl Module for AsciiDoc {
 /// stem to title case (replacing hyphens and underscores with spaces).
 fn file_stem_title(path: &str) -> String {
     let name = path.rsplit('/').next().unwrap_or(path);
-    let stem = name.rsplit_once('.').map(|(s, _)| s).unwrap_or(name);
+    let stem = name.rsplit_once('.').map_or(name, |(s, _)| s);
     let mut title = String::new();
     let mut capitalize_next = true;
     for ch in stem.chars() {
