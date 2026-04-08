@@ -669,6 +669,11 @@ fn update_markdown_nav(site_dir: &Path, pages: &[RenderedPage]) {
             continue;
         };
 
+        // Determine relative prefix based on page depth:
+        // index.html is at site root → use "./"
+        // markdown/index.html is one level deep → use "../"
+        let prefix = if md_page.contains('/') { "../" } else { "./" };
+
         // Add AsciiDoc nav entries before the closing </ul> of the primary nav
         // Find the last </ul> before </nav> in the primary nav
         let nav_entries: String = pages
@@ -677,10 +682,11 @@ fn update_markdown_nav(site_dir: &Path, pages: &[RenderedPage]) {
                 format!(
                     r#"
     <li class="md-nav__item">
-      <a href="../{stem}/" class="md-nav__link">
+      <a href="{prefix}{stem}/" class="md-nav__link">
         <span class="md-ellipsis">{title}</span>
       </a>
     </li>"#,
+                    prefix = prefix,
                     stem = pg.file_stem,
                     title = pg.title,
                 )
