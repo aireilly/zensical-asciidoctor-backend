@@ -340,7 +340,7 @@ fn build_left_nav(nav_entries: &[NavEntry], current_toc: &[TocEntry]) -> String 
                 r#"                    <li class="md-nav__item md-nav__item--active">
                       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
                       <label class="md-nav__link md-nav__link--active" for="__toc">
-"#
+"#,
             );
             if let Some(svg) = &entry.icon_svg {
                 html.push_str("                        ");
