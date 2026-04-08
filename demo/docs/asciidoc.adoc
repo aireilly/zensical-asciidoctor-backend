@@ -86,6 +86,7 @@ Cross-references between AsciiDoc pages are rewritten for directory-URL routing:
 
 * See xref:features.adoc[Feature Showcase] for more examples
 * Back to the xref:../index.html[home page]
+* External link: https://asciidoctor.org[Asciidoctor documentation]
 
 == Lists
 
