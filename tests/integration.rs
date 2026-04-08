@@ -34,7 +34,8 @@ fn test_full_pipeline() {
     // the ensure_heading_ids pass will pick up for the TOC, but the meta
     // extractor specifically looks for h1.sect0 (full-document mode).
     assert!(
-        processed.meta.title.is_none() || processed.meta.title.as_deref() == Some("Simple Test Document"),
+        processed.meta.title.is_none()
+            || processed.meta.title.as_deref() == Some("Simple Test Document"),
         "meta title should be None (standalone mode) or match the document title"
     );
 
@@ -50,10 +51,7 @@ fn test_full_pipeline() {
     // TOC: In standalone mode the plain <h1> (no sect0 class) is included as
     // a top-level entry, with the h2 sections as its children.  Verify we
     // have meaningful TOC data.
-    assert!(
-        !processed.toc.is_empty(),
-        "TOC should not be empty"
-    );
+    assert!(!processed.toc.is_empty(), "TOC should not be empty");
 
     // Collect all TOC entry titles (top-level and children) so we can assert
     // that "Introduction" appears somewhere.

@@ -37,7 +37,7 @@ pub struct Renderer {
 
 impl Renderer {
     /// Create a new `Renderer` from the given configuration.
-    #[must_use] 
+    #[must_use]
     pub fn new(config: &Config) -> Self {
         let mut attributes: Vec<(String, String)> = config
             .attributes
@@ -60,7 +60,7 @@ impl Renderer {
     ///
     /// The returned vector includes the command name as the first element,
     /// followed by all flags, options, and the file path.
-    #[must_use] 
+    #[must_use]
     pub fn build_args(&self, src_path: &str) -> Vec<String> {
         let mut args = vec![
             self.cmd.clone(),
@@ -195,10 +195,7 @@ mod tests {
     #[test]
     fn test_build_args_with_attributes() {
         let config = Config {
-            attributes: HashMap::from([(
-                String::from("imagesdir"),
-                String::from("images"),
-            )]),
+            attributes: HashMap::from([(String::from("imagesdir"), String::from("images"))]),
             ..Config::default()
         };
         let renderer = Renderer::new(&config);
@@ -237,8 +234,7 @@ mod tests {
         let args = renderer.build_args("test.adoc");
 
         assert!(
-            args.windows(2)
-                .any(|w| w[0] == "-a" && w[1] == "showtitle"),
+            args.windows(2).any(|w| w[0] == "-a" && w[1] == "showtitle"),
             "expected -a showtitle (without =) in args: {args:?}"
         );
         // Make sure it does NOT contain "showtitle=".

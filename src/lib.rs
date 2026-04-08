@@ -59,7 +59,7 @@ pub struct AsciiDoc {
 
 impl AsciiDoc {
     /// Create a new `AsciiDoc` module with the given configuration.
-    #[must_use] 
+    #[must_use]
     pub fn new(config: Config) -> Self {
         Self { config }
     }
@@ -78,7 +78,8 @@ impl Module for AsciiDoc {
         let config = self.config.clone();
         let _ = adoc_files.map(move |path: &FilePath| {
             let renderer = crate::renderer::Renderer::new(&config);
-            let raw_html = renderer.render(&path.0)
+            let raw_html = renderer
+                .render(&path.0)
                 .map_err(|e| zrx::scheduler::step::Error::Panic(Box::new(e)))?;
 
             let processor = crate::html::HtmlProcessor::new();
@@ -92,7 +93,10 @@ impl Module for AsciiDoc {
                 meta.insert(String::from("description"), desc.clone());
             }
 
-            let title = processed.meta.title.clone()
+            let title = processed
+                .meta
+                .title
+                .clone()
                 .unwrap_or_else(|| file_stem_title(&path.0));
 
             Ok(RenderedDoc {
