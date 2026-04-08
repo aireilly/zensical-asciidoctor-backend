@@ -94,8 +94,12 @@ Cross-references between AsciiDoc pages are rewritten for directory-URL routing:
 
 . Initialize the project with `zensical new`
 . Add AsciiDoc files to `docs/`
+.. Create `.adoc` files in the `docs/` directory
+.. Set document attributes (title, description)
 . Register the AsciiDoc module
 . Build with `zensical build`
+.. Run `cargo run --example render_asciidoc`
+.. Run `zensical build --clean`
 
 === Unordered
 
