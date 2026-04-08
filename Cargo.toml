@@ -1,0 +1,25 @@
+[package]
+name = "zensical-asciidoctor-backend"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.86"
+description = "Zensical module for AsciiDoc support via Asciidoctor"
+license = "MIT"
+repository = "https://github.com/aireilly/zensical-asciidoctor-backend"
+
+[dependencies]
+scraper = "0.22"
+thiserror = "2"
+tracing = "0.1"
+regex = "1"
+
+# ZRX module system — pinned to the tag that shipped the module system
+zrx = { git = "https://github.com/zensical/zrx.git", tag = "v0.0.17" }
+
+[dev-dependencies]
+insta = "1"
+pretty_assertions = "1"
+
+[features]
+default = []
+integration = []
