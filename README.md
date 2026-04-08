@@ -108,21 +108,16 @@ The `HtmlProcessor` applies these transformations to Asciidoctor output:
 The `demo/` directory contains a complete Zensical site with both Markdown and AsciiDoc pages.
 
 ```bash
-# Build the Zensical site (Markdown pages)
-cd demo && zensical build
+# Render AsciiDoc pages to .md wrappers, then build with Zensical
+make demo
 
-# Render AsciiDoc pages into the built site
-cargo run --example render_asciidoc
-
-# Serve locally
-python3 -m http.server 8123 -d demo/site
-# Open http://localhost:8123
+# Or render and serve with live reload
+make serve
 ```
 
-> **Note:** The `render_asciidoc` example is a temporary integration step. It
-> runs Asciidoctor on each `.adoc` file, post-processes the HTML, and injects
-> the pages into the already-built Zensical site (patching navigation and the
-> search index). Once Zensical ships a plugin registration API, this crate's
+The `render_asciidoc` example processes each `.adoc` file through Asciidoctor and the HTML post-processor, then writes a `.md` file containing the rendered HTML. Zensical builds and serves these `.md` files alongside hand-written Markdown pages, handling navigation, search, and TOC automatically.
+
+> **Note:** Once Zensical ships a plugin registration API, this crate's
 > `Module` trait implementation will allow `zensical build` to render `.adoc`
 > files natively -- no separate step required.
 
@@ -148,12 +143,20 @@ tests/
   integration.rs -- Full pipeline tests (feature-gated)
   fixtures/      -- Test AsciiDoc files
 examples/
-  render_asciidoc.rs -- Renders .adoc files into a built Zensical site
+  render_asciidoc.rs -- Renders .adoc files to .md wrappers for Zensical
 demo/
   docs/          -- Source .adoc and .md files
   site/          -- Built output
   zensical.toml  -- Zensical config
 ```
+
+## Current limitations
+
+- **No live reload for `.adoc` files** -- `zensical serve` watches `.md` files only. Editing a `.adoc` file requires re-running `cargo run --example render_asciidoc` (or a file watcher like `watchexec -w demo/docs -e adoc -- cargo run --example render_asciidoc`) before changes appear.
+- **Code line selection unavailable** -- AsciiDoc code blocks use Rouge (Pygments-compatible) highlighting with the same CSS token classes as Zensical's Pygments output, so colors match. However, the per-line wrapping spans that enable Zensical's code line-selection feature are not generated.
+- **`attr_list` extension required for heading IDs** -- the generated `.md` files use `## Heading {#id}` syntax. If the `attr_list` Markdown extension is not enabled in Zensical, heading IDs will render as literal text.
+- **No incremental builds** -- every run of `render_asciidoc` re-renders all `.adoc` files, even if unchanged.
+- **Two-step build** -- AsciiDoc rendering is a pre-build step (`cargo run --example render_asciidoc`) rather than a native Zensical plugin. The generated `.md` files must be committed or regenerated in CI.
 
 ## Roadmap
 
@@ -178,7 +181,7 @@ To enable the demo site deployment:
 
 1. Go to your repo **Settings > Pages**
 2. Set **Source** to **GitHub Actions**
-3. Push to `main` -- the workflow builds the Zensical site, renders AsciiDoc pages, and deploys
+3. Push to `main` -- the workflow renders AsciiDoc pages, builds the Zensical site, and deploys
 
 The deployed site demonstrates AsciiDoc and Markdown pages side-by-side with identical Zensical theme styling.
 

@@ -180,6 +180,7 @@ impl HtmlProcessor {
         result = self.transform_code_blocks(&result);
         result = self.transform_tables(&result);
         result = self.transform_figures(&result);
+        result = self.transform_definition_lists(&result);
 
         // 10. Fix xref URLs (regex-based).
         result = self.fix_xref_urls(&result, page_rel_path);
@@ -640,6 +641,17 @@ impl HtmlProcessor {
         }
 
         result
+    }
+
+    // -- Definition lists (regex) -------------------------------------------
+
+    /// Bold the `<dt>` terms in definition lists for visual weight.
+    /// Asciidoctor outputs `<dt class="hdlist1">Term</dt>`;
+    /// this wraps the text content in `<strong>`.
+    fn transform_definition_lists(&self, html: &str) -> String {
+        let re = Regex::new(r#"<dt class="hdlist1">([^<]+)</dt>"#).expect("valid regex");
+        re.replace_all(html, r#"<dt class="hdlist1"><strong>$1</strong></dt>"#)
+            .into_owned()
     }
 
     // -- Xref URLs (regex) --------------------------------------------------

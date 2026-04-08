@@ -102,3 +102,9 @@ Cross-references between AsciiDoc pages are rewritten for directory-URL routing:
 * Full Material theme compatibility
 * Subprocess rendering via `asciidoctor`
 * Configurable attributes and safe mode
+
+=== Definition List
+
+Renderer:: Invokes Asciidoctor as a subprocess to convert `.adoc` files to raw HTML.
+HtmlProcessor:: Transforms Asciidoctor HTML output into Zensical-compatible markup.
+Config:: Controls safe mode, attributes, and error handling for the rendering pipeline.

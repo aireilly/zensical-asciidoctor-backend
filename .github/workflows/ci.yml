@@ -66,12 +66,12 @@ jobs:
       - name: Install Zensical
         run: pip install zensical
 
+      - name: Render AsciiDoc pages
+        run: cargo run --example render_asciidoc
+
       - name: Build Zensical site
         working-directory: demo
         run: zensical build --clean
-
-      - name: Render AsciiDoc pages
-        run: cargo run --example render_asciidoc
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

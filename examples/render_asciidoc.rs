@@ -21,7 +21,7 @@ use zensical_asciidoctor_backend::renderer::Renderer;
 /// These divs have no visual meaning — they just group sections.
 const STRUCTURAL_CLASSES: &[&str] = &[
     "sect1", "sect2", "sect3", "sect4", "sect5", "sect6",
-    "sectionbody", "paragraph", "ulist", "olist",
+    "sectionbody", "paragraph", "ulist", "olist", "dlist",
     "listingblock", "content", "imageblock",
 ];
 
