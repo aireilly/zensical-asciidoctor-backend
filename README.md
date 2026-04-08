@@ -1,11 +1,11 @@
 # zensical-asciidoctor-backend
 
-A [Zensical](https://zensical.org) module that adds AsciiDoc support to Zensical sites. It renders `.adoc` files through [Asciidoctor](https://asciidoctor.org) and transforms the HTML output to be fully compatible with the Material theme, so AsciiDoc and Markdown pages are visually indistinguishable.
+A [Zensical](https://zensical.org) module that adds AsciiDoc support to Zensical sites. It renders `.adoc` files through [Asciidoctor](https://asciidoctor.org) and transforms the HTML output to be fully compatible with the Zensical theme, so AsciiDoc and Markdown pages are visually indistinguishable.
 
 ## Features
 
 - **Subprocess rendering** via the `asciidoctor` CLI -- no Ruby embedding required
-- **Full Material theme compatibility** -- admonitions, tables, code blocks, figures, TOC, and navigation all match the Markdown output
+- **Full Zensical theme compatibility** -- admonitions, tables, code blocks, figures, TOC, and navigation all match the Markdown output
 - **Cross-reference rewriting** -- `xref:page.adoc[]` links are rewritten for directory-URL routing
 - **Mixed sites** -- AsciiDoc and Markdown pages coexist in the same `docs/` directory
 - **Search integration** -- AsciiDoc pages are indexed alongside Markdown pages
@@ -59,7 +59,7 @@ let processor = HtmlProcessor::new();
 // Render an AsciiDoc file to raw HTML
 let raw_html = renderer.render("docs/page.adoc")?;
 
-// Transform to Material-compatible HTML
+// Transform to Zensical-compatible HTML
 let result = processor.process(&raw_html, Some("page.adoc"));
 
 println!("Title: {:?}", result.meta.title);
@@ -96,7 +96,7 @@ The `HtmlProcessor` applies these transformations to Asciidoctor output:
 | Metadata extraction | Extracts document title and description |
 | Heading IDs | Ensures all headings have anchor IDs |
 | Table of contents | Builds a hierarchical TOC from headings |
-| Admonitions | Converts Asciidoctor admonition blocks to Material `<div class="admonition">` |
+| Admonitions | Converts Asciidoctor admonition blocks to Zensical `<div class="admonition">` |
 | Callout lists | Converts table-based callout lists to ordered lists |
 | Code cleanup | Removes callout markers (`<b class="conum">`) from code blocks |
 | Tables | Wraps in `md-typeset__table`, strips Asciidoctor classes, removes colgroups |
@@ -112,12 +112,19 @@ The `demo/` directory contains a complete Zensical site with both Markdown and A
 cd demo && zensical build
 
 # Render AsciiDoc pages into the built site
-cargo run --example render_demo
+cargo run --example render_asciidoc
 
 # Serve locally
 python3 -m http.server 8123 -d demo/site
 # Open http://localhost:8123
 ```
+
+> **Note:** The `render_asciidoc` example is a temporary integration step. It
+> runs Asciidoctor on each `.adoc` file, post-processes the HTML, and injects
+> the pages into the already-built Zensical site (patching navigation and the
+> search index). Once Zensical ships a plugin registration API, this crate's
+> `Module` trait implementation will allow `zensical build` to render `.adoc`
+> files natively -- no separate step required.
 
 ## Testing
 
@@ -141,7 +148,7 @@ tests/
   integration.rs -- Full pipeline tests (feature-gated)
   fixtures/      -- Test AsciiDoc files
 examples/
-  render_demo.rs -- Demo site renderer
+  render_asciidoc.rs -- Renders .adoc files into a built Zensical site
 demo/
   docs/          -- Source .adoc and .md files
   site/          -- Built output
@@ -151,13 +158,11 @@ demo/
 ## Roadmap
 
 - [ ] **Publish to crates.io** -- once the zrx dependency is published
-- [ ] **Native Zensical integration** -- register as a first-class Zensical plugin so `zensical build` renders `.adoc` files automatically without the separate `render_demo` step
+- [ ] **Native Zensical integration** -- register as a first-class Zensical plugin so `zensical build` renders `.adoc` files automatically without the separate `render_asciidoc` step
 - [ ] **Syntax highlighting** -- integrate with Zensical's built-in highlighter instead of relying on Rouge
 - [ ] **Diagram support** -- render Mermaid/PlantUML diagrams embedded in AsciiDoc
 - [ ] **Include directive** -- support `include::` for file composition
 - [ ] **Incremental builds** -- only re-render changed `.adoc` files
-- [ ] **Asciidoctor.js fallback** -- optional Node.js-based rendering when the Ruby gem isn't installed
-- [ ] **Custom templates** -- support Asciidoctor custom templates for fine-grained output control
 
 ## CI/CD
 
@@ -177,7 +182,7 @@ To enable the demo site deployment:
 2. Set **Source** to **GitHub Actions**
 3. Push to `main` -- the workflow builds the Zensical site, renders AsciiDoc pages, and deploys
 
-The deployed site demonstrates AsciiDoc and Markdown pages side-by-side with identical Material theme styling.
+The deployed site demonstrates AsciiDoc and Markdown pages side-by-side with identical Zensical theme styling.
 
 ## License
 

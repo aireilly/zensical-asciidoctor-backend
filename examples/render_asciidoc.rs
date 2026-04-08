@@ -1,6 +1,6 @@
 //! Renders the demo AsciiDoc files through the full pipeline.
 //!
-//! Usage: cargo run --example render_demo
+//! Usage: cargo run --example render_asciidoc
 //!
 //! This example processes all .adoc files in demo/docs/,
 //! renders them through Asciidoctor + HTML post-processing, and

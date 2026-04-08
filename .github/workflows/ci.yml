@@ -71,7 +71,7 @@ jobs:
         run: zensical build --clean
 
       - name: Render AsciiDoc pages
-        run: cargo run --example render_demo
+        run: cargo run --example render_asciidoc
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
