@@ -1,0 +1,104 @@
+= AsciiDoc with Zensical
+:description: Demonstrates AsciiDoc rendering through the zensical-asciidoctor-backend module
+:sectanchors:
+:showtitle:
+:source-highlighter: rouge
+
+This page demonstrates AsciiDoc content rendered through the `zensical-asciidoctor-backend` module.
+It showcases the HTML transformations that convert Asciidoctor output into Material-theme-compatible HTML.
+
+== Admonitions
+
+Asciidoctor admonitions are transformed into Material Design admonition blocks.
+
+NOTE: This is a *note* admonition. It provides helpful context.
+
+TIP: This is a *tip* admonition. Use it for best practices.
+
+WARNING: This is a *warning* admonition. Proceed with caution.
+
+IMPORTANT: This is an *important* admonition. Maps to Material's "danger" style.
+
+CAUTION: This is a *caution* admonition. Maps to Material's "warning" style.
+
+== Code Blocks
+
+Source code is rendered with syntax highlighting.
+
+[source,rust]
+----
+use zrx::module::{Module, Context, Result};
+
+pub struct AsciiDoc {
+    config: Config,
+}
+
+impl Module for AsciiDoc {
+    fn setup(&self, ctx: &mut Context) -> Result { // <1>
+        let files = ctx.add::<FilePath>(); // <2>
+
+        let adoc_files = files.filter(|path: &FilePath| {
+            Ok(path.0.ends_with(".adoc"))
+        });
+
+        Ok(())
+    }
+}
+----
+<1> The single entry point for module initialization
+<2> Creates a typed subscription to file path streams
+
+== Tables
+
+Tables are wrapped with Material CSS classes for responsive styling.
+
+.Zensical Module API
+|===
+| Component | Purpose | Crate
+
+| `Module` trait
+| Single `setup` method entry point
+| `zrx-module`
+
+| `Context`
+| Runtime interaction API
+| `zrx-module`
+
+| `Stream`
+| Reactive data pipeline
+| `zrx-stream`
+
+| `Value` trait
+| Type marker for stream data
+| `zrx-scheduler`
+|===
+
+== Images
+
+Images are converted to HTML5 `<figure>` elements.
+
+.The Zensical build pipeline
+image::pipeline.png[Build pipeline diagram,width=600]
+
+== Cross-References
+
+Cross-references between AsciiDoc pages are rewritten for directory-URL routing:
+
+* See xref:features.adoc[Feature Showcase] for more examples
+* Back to the xref:../index.md[home page]
+
+== Lists
+
+=== Ordered
+
+. Initialize the project with `zensical new`
+. Add AsciiDoc files to `docs/`
+. Register the AsciiDoc module
+. Build with `zensical build`
+
+=== Unordered
+
+* Supports mixed AsciiDoc + Markdown sites
+* Full Material theme compatibility
+* Subprocess rendering via `asciidoctor`
+* Configurable attributes and safe mode

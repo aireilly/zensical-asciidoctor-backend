@@ -1,0 +1,91 @@
+= Feature Showcase
+:description: Complete showcase of supported AsciiDoc features
+:sectanchors:
+:showtitle:
+:source-highlighter: rouge
+
+This page demonstrates the full range of AsciiDoc features supported by the backend.
+
+== Inline Formatting
+
+AsciiDoc supports *bold*, _italic_, `monospace`, *_bold italic_*, and [.underline]#underline# text.
+
+You can also use ^superscript^ and ~subscript~ formatting.
+
+== Literal Blocks
+
+A literal block preserves whitespace:
+
+....
+This text    is    preserved
+    exactly as    written
+        including indentation
+....
+
+== Sidebar
+
+****
+.Optional Title
+This is a sidebar block. Use it for supplementary information that sits alongside the main content.
+****
+
+== Blockquotes
+
+[quote, Martin Fowler]
+____
+Any fool can write code that a computer can understand.
+Good programmers write code that humans can understand.
+____
+
+== Definition Lists
+
+Zensical:: A modern static site generator built in Rust by the Material for MkDocs team.
+Module:: A composable unit of functionality that implements the `Module` trait.
+Stream:: A reactive data pipeline for processing items in the build graph.
+
+== Nested Lists
+
+* Build system
+** Scheduler
+*** Actions
+*** Stores
+** Streams
+*** Operators (map, filter, join)
+*** Workflows
+* Module system
+** Context API
+** Typed subscriptions
+
+== Multiple Code Blocks
+
+[source,python]
+----
+# Python example
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+----
+
+[source,javascript]
+----
+// JavaScript example
+const greet = (name) => `Hello, ${name}!`;
+----
+
+[source,toml]
+----
+# zensical.toml configuration
+[project]
+site_name = "My AsciiDoc Site"
+site_description = "Built with Zensical"
+----
+
+== Passthrough Content
+
+pass:[<div style="padding: 1em; background: #f0f0f0; border-radius: 4px;">
+This is raw HTML passed through from AsciiDoc.
+</div>]
+
+== Links
+
+* External: https://zensical.org[Zensical website]
+* Cross-reference: xref:index.adoc[Back to AsciiDoc index]
