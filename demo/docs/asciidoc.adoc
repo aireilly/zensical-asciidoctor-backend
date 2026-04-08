@@ -85,7 +85,7 @@ image::orange_kitten.png[An adorable orange kitten,width=600]
 Cross-references between AsciiDoc pages are rewritten for directory-URL routing:
 
 * See xref:features.adoc[Feature Showcase] for more examples
-* Back to the xref:../index.md[home page]
+* Back to the xref:../index.html[home page]
 
 == Lists
 

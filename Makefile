@@ -22,14 +22,15 @@ fmt: ## Check formatting
 clippy: ## Run clippy lints
 	cargo clippy --all-targets --all-features -- -D warnings
 
-demo: ## Build the demo site (zensical build + render AsciiDoc pages)
-	cd demo && zensical build --clean
+demo: ## Build the demo site (render AsciiDoc + zensical build)
 	cargo run --example render_asciidoc
+	cd demo && zensical build --clean
 
-serve: demo ## Build and serve the demo site at http://localhost:8123
-	@echo "Serving demo site at http://localhost:8123 (Ctrl+C to stop)"
-	python3 -m http.server 8123 -d demo/site
+serve: ## Render AsciiDoc and serve with zensical
+	cargo run --example render_asciidoc
+	cd demo && zensical serve
 
 clean: ## Clean build artifacts and demo site
 	cargo clean
 	rm -rf demo/site
+	rm -f demo/docs/asciidoc.md demo/docs/features.md

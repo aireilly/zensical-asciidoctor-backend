@@ -1,2 +1,5 @@
 /target
 demo/site/
+# Generated .md files from AsciiDoc rendering
+demo/docs/asciidoc.md
+demo/docs/features.md

@@ -754,9 +754,13 @@ fn rewrite_href(href: &str, page_rel_path: Option<&str>) -> String {
     // Convert extension to trailing slash.
     let mut converted = if let Some(stripped) = path_only.strip_suffix("/index.html") {
         format!("{stripped}/")
+    } else if let Some(stripped) = path_only.strip_suffix("/index.md") {
+        format!("{stripped}/")
     } else if let Some(stripped) = path_only.strip_suffix(".html") {
         format!("{stripped}/")
     } else if let Some(stripped) = path_only.strip_suffix(".adoc") {
+        format!("{stripped}/")
+    } else if let Some(stripped) = path_only.strip_suffix(".md") {
         format!("{stripped}/")
     } else {
         path_only.to_string()

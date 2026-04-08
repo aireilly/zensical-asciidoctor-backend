@@ -68,6 +68,13 @@ function hello() {
 | Row 2    | Data     | Data     |
 ```
 
+| Component      | Purpose                       | Crate            |
+|----------------|-------------------------------|------------------|
+| `Module` trait | Single `setup` method entry   | `zrx-module`     |
+| `Context`      | Runtime interaction API       | `zrx-module`     |
+| `Stream`       | Reactive data pipeline        | `zrx-stream`     |
+| `Value` trait  | Type marker for stream data   | `zrx-scheduler`  |
+
 ## Horizontal rule
 ```
 ---
