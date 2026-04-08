@@ -160,7 +160,7 @@ impl HtmlProcessor {
     ///
     /// `page_rel_path` is the page's source-relative path (e.g.
     /// `"guides/install.adoc"`), used to resolve cross-reference URLs.
-    #[must_use] 
+    #[must_use]
     pub fn process(&self, html: &str, page_rel_path: Option<&str>) -> ProcessedDoc {
         let mut result = html.to_string();
 
@@ -227,9 +227,7 @@ impl HtmlProcessor {
         for level in 1..=6u8 {
             let tag = format!("h{level}");
             // Match <hN ...>...</hN> for this specific level.
-            let pattern = format!(
-                r"(?is)<({tag})(\s[^>]*)?>(.+?)</{tag}>"
-            );
+            let pattern = format!(r"(?is)<({tag})(\s[^>]*)?>(.+?)</{tag}>");
             let re = Regex::new(&pattern).expect("valid regex");
 
             result = re
@@ -246,9 +244,7 @@ impl HtmlProcessor {
                         if id.is_empty() {
                             caps[0].to_string()
                         } else {
-                            format!(
-                                "<{tag_name} id=\"{id}\"{attrs}>{inner}</{tag_name}>"
-                            )
+                            format!("<{tag_name} id=\"{id}\"{attrs}>{inner}</{tag_name}>")
                         }
                     }
                 })
@@ -262,8 +258,7 @@ impl HtmlProcessor {
 
     fn extract_toc(&self, html: &str) -> Vec<TocEntry> {
         let doc = Html::parse_fragment(html);
-        let heading_sel =
-            Selector::parse("h1, h2, h3, h4, h5, h6").expect("valid selector");
+        let heading_sel = Selector::parse("h1, h2, h3, h4, h5, h6").expect("valid selector");
 
         let mut items: Vec<TocEntry> = Vec::new();
         let mut stack: Vec<(u8, Vec<usize>)> = Vec::new();
@@ -274,9 +269,7 @@ impl HtmlProcessor {
                 continue;
             }
 
-            let level = el.value().name()[1..]
-                .parse::<u8>()
-                .unwrap_or(2);
+            let level = el.value().name()[1..].parse::<u8>().unwrap_or(2);
 
             let title: String = el.text().collect::<Vec<_>>().join(" ").trim().to_string();
             let id = el.value().attr("id").unwrap_or("").to_string();
@@ -320,20 +313,16 @@ impl HtmlProcessor {
     fn transform_admonitions(&self, html: &str) -> String {
         // Find the start of each admonitionblock, then find its matching end
         // by counting div nesting depth.
-        let start_re = Regex::new(
-            r#"<div\s+class="admonitionblock\s+(\w+)"[^>]*>"#,
-        )
-        .expect("valid regex");
+        let start_re =
+            Regex::new(r#"<div\s+class="admonitionblock\s+(\w+)"[^>]*>"#).expect("valid regex");
 
         // Pre-compile regexes used inside the loop.
         let title_re = Regex::new(
             r#"(?is)<td\s+class="icon"[^>]*>.*?<div\s+class="title"[^>]*>\s*(.*?)\s*</div>"#,
         )
         .expect("valid regex");
-        let content_re = Regex::new(
-            r#"(?is)<td\s+class="content"[^>]*>(.*?)</td>"#,
-        )
-        .expect("valid regex");
+        let content_re =
+            Regex::new(r#"(?is)<td\s+class="content"[^>]*>(.*?)</td>"#).expect("valid regex");
 
         let mut result = html.to_string();
         // Process repeatedly until no more admonition blocks are found.
@@ -344,10 +333,7 @@ impl HtmlProcessor {
             }
             let m = start_match.unwrap();
             let start_pos = m.start();
-            let kind = start_re
-                .captures(&result[start_pos..])
-                .unwrap()[1]
-                .to_string();
+            let kind = start_re.captures(&result[start_pos..]).unwrap()[1].to_string();
 
             // Find the matching closing </div> by counting nesting.
             let after_open = m.end();
@@ -367,7 +353,8 @@ impl HtmlProcessor {
 
             // Extract title from the icon td's .title div.
             let title_text = title_re
-                .captures(block_html).map_or_else(|| capitalize(&kind), |c| c[1].to_string());
+                .captures(block_html)
+                .map_or_else(|| capitalize(&kind), |c| c[1].to_string());
 
             // Extract content from td.content.
             let content = content_re
@@ -441,10 +428,7 @@ impl HtmlProcessor {
     // -- Code callout cleanup (regex) ---------------------------------------
 
     fn clean_callout_markers(&self, html: &str) -> String {
-        let re = Regex::new(
-            r"(</span>)\s*(?:\(\d+\)|<\d+>|&lt;\d+&gt;)",
-        )
-        .expect("valid regex");
+        let re = Regex::new(r"(</span>)\s*(?:\(\d+\)|<\d+>|&lt;\d+&gt;)").expect("valid regex");
 
         re.replace_all(html, "$1").into_owned()
     }
@@ -468,9 +452,7 @@ impl HtmlProcessor {
         re.replace_all(html, |caps: &regex::Captures| {
             let lang = &caps[1];
             let code = &caps[2];
-            format!(
-                "<div class=\"language-{lang} highlight\"><pre><code>{code}</code></pre></div>"
-            )
+            format!("<div class=\"language-{lang} highlight\"><pre><code>{code}</code></pre></div>")
         })
         .into_owned()
     }
@@ -481,18 +463,14 @@ impl HtmlProcessor {
         let mut result = html.to_string();
 
         // First pass: handle tables inside div.tableblock with a title.
-        let outer_re = Regex::new(
-            r#"<div\s+class="tableblock"[^>]*>"#,
-        )
-        .expect("valid regex");
+        let outer_re = Regex::new(r#"<div\s+class="tableblock"[^>]*>"#).expect("valid regex");
 
         // Pre-compile regexes used inside the loop.
-        let title_re = Regex::new(
-            r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#,
-        )
-        .expect("valid regex");
-        let inner_table_re = Regex::new(r#"(?is)(<table\s+class="[^"]*tableblock[^"]*"[^>]*>)(.*?</table>)"#)
-            .expect("valid regex");
+        let title_re =
+            Regex::new(r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#).expect("valid regex");
+        let inner_table_re =
+            Regex::new(r#"(?is)(<table\s+class="[^"]*tableblock[^"]*"[^>]*>)(.*?</table>)"#)
+                .expect("valid regex");
 
         // Process outer div.tableblock wrappers.
         loop {
@@ -544,10 +522,9 @@ impl HtmlProcessor {
         }
 
         // Second pass: handle standalone table.tableblock (not inside div.tableblock).
-        let table_re = Regex::new(
-            r#"(?is)(<table\s+class="[^"]*tableblock[^"]*"[^>]*>.*?</table>)"#,
-        )
-        .expect("valid regex");
+        let table_re =
+            Regex::new(r#"(?is)(<table\s+class="[^"]*tableblock[^"]*"[^>]*>.*?</table>)"#)
+                .expect("valid regex");
 
         // Wrap any remaining unwrapped table.tableblock elements.
         result = table_re
@@ -568,52 +545,34 @@ impl HtmlProcessor {
         // styles apply cleanly. Remove class attributes entirely from table,
         // th, td elements (Asciidoctor classes like tableblock, frame-all,
         // grid-all, halign-left, valign-top fight Material's styling).
-        let table_class_re = Regex::new(
-            r#"<table\s+class="[^"]*tableblock[^"]*"([^>]*)>"#,
-        )
-        .expect("valid regex");
+        let table_class_re =
+            Regex::new(r#"<table\s+class="[^"]*tableblock[^"]*"([^>]*)>"#).expect("valid regex");
         result = table_class_re
             .replace_all(&result, "<table$1>")
             .into_owned();
 
-        let th_class_re = Regex::new(
-            r#"<th\s+class="[^"]*tableblock[^"]*">"#,
-        )
-        .expect("valid regex");
-        result = th_class_re
-            .replace_all(&result, "<th>")
-            .into_owned();
+        let th_class_re =
+            Regex::new(r#"<th\s+class="[^"]*tableblock[^"]*">"#).expect("valid regex");
+        result = th_class_re.replace_all(&result, "<th>").into_owned();
 
-        let td_class_re = Regex::new(
-            r#"<td\s+class="[^"]*tableblock[^"]*">"#,
-        )
-        .expect("valid regex");
-        result = td_class_re
-            .replace_all(&result, "<td>")
-            .into_owned();
+        let td_class_re =
+            Regex::new(r#"<td\s+class="[^"]*tableblock[^"]*">"#).expect("valid regex");
+        result = td_class_re.replace_all(&result, "<td>").into_owned();
 
         // Unwrap <p class="tableblock">...</p> inside cells — Material doesn't
         // expect paragraph wrappers inside table cells.
-        let p_tableblock_re = Regex::new(
-            r#"<p\s+class="tableblock">(.*?)</p>"#,
-        )
-        .expect("valid regex");
-        result = p_tableblock_re
-            .replace_all(&result, "$1")
-            .into_owned();
+        let p_tableblock_re =
+            Regex::new(r#"<p\s+class="tableblock">(.*?)</p>"#).expect("valid regex");
+        result = p_tableblock_re.replace_all(&result, "$1").into_owned();
 
         // Remove colgroup/col elements — let Material CSS handle column widths.
-        let colgroup_re = Regex::new(
-            r#"(?is)<colgroup>.*?</colgroup>"#,
-        )
-        .expect("valid regex");
+        let colgroup_re = Regex::new(r#"(?is)<colgroup>.*?</colgroup>"#).expect("valid regex");
         result = colgroup_re.replace_all(&result, "").into_owned();
 
         // Convert <caption class="title">Table N. ...</caption> to plain <caption>.
-        let caption_class_re = Regex::new(
-            r#"<caption\s+class="title">(?:Table\s+\d+\.\s*)?(.*?)</caption>"#,
-        )
-        .expect("valid regex");
+        let caption_class_re =
+            Regex::new(r#"<caption\s+class="title">(?:Table\s+\d+\.\s*)?(.*?)</caption>"#)
+                .expect("valid regex");
         result = caption_class_re
             .replace_all(&result, "<caption>$1</caption>")
             .into_owned();
@@ -627,14 +586,10 @@ impl HtmlProcessor {
         let start_re = Regex::new(r#"<div\s+class="imageblock"[^>]*>"#).expect("valid regex");
 
         // Pre-compile regexes used inside the loop.
-        let content_re = Regex::new(
-            r#"(?is)<div\s+class="content"[^>]*>(.*?)</div>"#,
-        )
-        .expect("valid regex");
-        let fig_title_re = Regex::new(
-            r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#,
-        )
-        .expect("valid regex");
+        let content_re =
+            Regex::new(r#"(?is)<div\s+class="content"[^>]*>(.*?)</div>"#).expect("valid regex");
+        let fig_title_re =
+            Regex::new(r#"(?is)<div\s+class="title"[^>]*>(.*?)</div>"#).expect("valid regex");
 
         let mut result = html.to_string();
 
@@ -671,18 +626,14 @@ impl HtmlProcessor {
 
             let figure = if let Some(ref title) = title_text {
                 if title.is_empty() {
-                    format!(
-                        "<figure class=\"adoc-figure\">{content_inner}</figure>"
-                    )
+                    format!("<figure class=\"adoc-figure\">{content_inner}</figure>")
                 } else {
                     format!(
                         "<figure class=\"adoc-figure\"><figcaption>{title}</figcaption>{content_inner}</figure>"
                     )
                 }
             } else {
-                format!(
-                    "<figure class=\"adoc-figure\">{content_inner}</figure>"
-                )
+                format!("<figure class=\"adoc-figure\">{content_inner}</figure>")
             };
 
             result.replace_range(start_pos..end_pos, &figure);
@@ -884,10 +835,7 @@ mod tests {
         let html = r#"<meta name="description" content="A great doc"><h2 id="intro">Intro</h2>"#;
         let proc = processor();
         let result = proc.process(html, None);
-        assert_eq!(
-            result.meta.description,
-            Some("A great doc".to_string())
-        );
+        assert_eq!(result.meta.description, Some("A great doc".to_string()));
     }
 
     // -- TOC tests ----------------------------------------------------------
@@ -1076,8 +1024,7 @@ mod tests {
 
     #[test]
     fn test_transform_table_wraps_with_typeset() {
-        let html =
-            r#"<table class="tableblock"><tr><td>cell</td></tr></table>"#;
+        let html = r#"<table class="tableblock"><tr><td>cell</td></tr></table>"#;
 
         let proc = processor();
         let result = proc.process(html, None);
@@ -1109,7 +1056,11 @@ mod tests {
             result.html
         );
         assert!(result.html.contains("md-typeset__table"));
-        assert!(!result.html.contains(r#"<div class="title">Table 1. My Table</div>"#));
+        assert!(
+            !result
+                .html
+                .contains(r#"<div class="title">Table 1. My Table</div>"#)
+        );
     }
 
     // -- Figure tests -------------------------------------------------------
@@ -1129,7 +1080,11 @@ mod tests {
             "Expected figure.adoc-figure, got: {}",
             result.html
         );
-        assert!(result.html.contains("<figcaption>Figure 1. A nice photo</figcaption>"));
+        assert!(
+            result
+                .html
+                .contains("<figcaption>Figure 1. A nice photo</figcaption>")
+        );
         assert!(result.html.contains("<img"));
         assert!(!result.html.contains("imageblock"));
     }

@@ -325,11 +325,13 @@ fn build_left_nav(nav_entries: &[NavEntry], current_toc: &[TocEntry]) -> String 
     html.push_str("                      ");
     html.push_str(ICON_BOOK);
     html.push('\n');
-    html.push_str(r#"                    </a>
+    html.push_str(
+        r#"                    </a>
                     Documentation
                   </label>
                   <ul class="md-nav__list" data-md-scrollfix>
-"#);
+"#,
+    );
 
     for entry in nav_entries {
         if entry.is_active {
@@ -376,9 +378,11 @@ fn build_left_nav(nav_entries: &[NavEntry], current_toc: &[TocEntry]) -> String 
                         <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
 "#);
                 build_toc_items(current_toc, &mut html, 26);
-                html.push_str(r#"                        </ul>
+                html.push_str(
+                    r#"                        </ul>
                       </nav>
-"#);
+"#,
+                );
             }
 
             html.push_str("                    </li>\n");
@@ -405,8 +409,10 @@ fn build_left_nav(nav_entries: &[NavEntry], current_toc: &[TocEntry]) -> String 
         }
     }
 
-    html.push_str(r#"                  </ul>
-                </nav>"#);
+    html.push_str(
+        r#"                  </ul>
+                </nav>"#,
+    );
     html
 }
 
@@ -456,11 +462,7 @@ fn build_toc_items(entries: &[TocEntry], html: &mut String, indent: usize) {
 }
 
 /// Build footer prev/next navigation.
-fn build_footer_nav(
-    all_pages: &[RenderedPage],
-    current_idx: usize,
-    base_path: &str,
-) -> String {
+fn build_footer_nav(all_pages: &[RenderedPage], current_idx: usize, base_path: &str) -> String {
     let prev = if current_idx > 0 {
         Some(&all_pages[current_idx - 1])
     } else {
@@ -476,9 +478,8 @@ fn build_footer_nav(
         return String::new();
     }
 
-    let mut html = String::from(
-        "        <nav class=\"md-footer__inner md-grid\" aria-label=\"Footer\">\n",
-    );
+    let mut html =
+        String::from("        <nav class=\"md-footer__inner md-grid\" aria-label=\"Footer\">\n");
 
     if let Some(pg) = prev {
         html.push_str(&format!(
@@ -542,7 +543,9 @@ fn update_search_index(site_dir: &PathBuf, pages: &[RenderedPage]) {
     // Remove any previously added AsciiDoc entries (re-run safe)
     items.retain(|item| {
         let loc = item["location"].as_str().unwrap_or("");
-        !pages.iter().any(|pg| loc.starts_with(&format!("{}/", pg.file_stem)))
+        !pages
+            .iter()
+            .any(|pg| loc.starts_with(&format!("{}/", pg.file_stem)))
     });
 
     // Add entries for each AsciiDoc page
