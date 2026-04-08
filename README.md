@@ -159,9 +159,7 @@ demo/
 
 - [ ] **Publish to crates.io** -- once the zrx dependency is published
 - [ ] **Native Zensical integration** -- register as a first-class Zensical plugin so `zensical build` renders `.adoc` files automatically without the separate `render_asciidoc` step
-- [ ] **Syntax highlighting** -- integrate with Zensical's built-in highlighter instead of relying on Rouge
 - [ ] **Diagram support** -- render Mermaid/PlantUML diagrams embedded in AsciiDoc
-- [ ] **Include directive** -- support `include::` for file composition
 - [ ] **Incremental builds** -- only re-render changed `.adoc` files
 
 ## CI/CD

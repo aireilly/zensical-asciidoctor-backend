@@ -173,14 +173,15 @@ impl HtmlProcessor {
         // 3. Extract TOC (read-only, uses scraper, after IDs are in place).
         let toc = self.extract_toc(&result);
 
-        // 4-8. Transform content (all regex-based).
+        // 4-9. Transform content (all regex-based).
         result = self.transform_admonitions(&result);
         result = self.transform_callout_lists(&result);
         result = self.clean_callout_markers(&result);
+        result = self.transform_code_blocks(&result);
         result = self.transform_tables(&result);
         result = self.transform_figures(&result);
 
-        // 9. Fix xref URLs (regex-based).
+        // 10. Fix xref URLs (regex-based).
         result = self.fix_xref_urls(&result, page_rel_path);
 
         ProcessedDoc {
@@ -446,6 +447,32 @@ impl HtmlProcessor {
         .expect("valid regex");
 
         re.replace_all(html, "$1").into_owned()
+    }
+
+    // -- Code blocks (regex) ------------------------------------------------
+
+    /// Convert Rouge-highlighted code blocks from Asciidoctor format to
+    /// Zensical format so that Material theme CSS applies correctly.
+    ///
+    /// Asciidoctor produces:
+    ///   `<pre class="rouge highlight"><code data-lang="rust">...</code></pre>`
+    ///
+    /// Zensical expects:
+    ///   `<div class="language-rust highlight"><pre><code>...</code></pre></div>`
+    fn transform_code_blocks(&self, html: &str) -> String {
+        let re = Regex::new(
+            r#"(?s)<pre\s+class="rouge highlight"><code\s+data-lang="([^"]+)">(.*?)</code></pre>"#,
+        )
+        .expect("valid regex");
+
+        re.replace_all(html, |caps: &regex::Captures| {
+            let lang = &caps[1];
+            let code = &caps[2];
+            format!(
+                "<div class=\"language-{lang} highlight\"><pre><code>{code}</code></pre></div>"
+            )
+        })
+        .into_owned()
     }
 
     // -- Tables (regex) -----------------------------------------------------
@@ -1010,6 +1037,41 @@ mod tests {
         assert!(result.html.contains("conum"));
     }
 
+    // -- Code block tests ---------------------------------------------------
+
+    #[test]
+    fn test_transform_code_block_rouge_to_zensical() {
+        let html = r#"<pre class="rouge highlight"><code data-lang="rust"><span class="k">use</span> <span class="nn">std</span>;</code></pre>"#;
+        let proc = processor();
+        let result = proc.process(html, None);
+
+        assert!(
+            result.html.contains(r#"class="language-rust highlight""#),
+            "Expected language-rust wrapper, got: {}",
+            result.html
+        );
+        assert!(
+            !result.html.contains(r#"class="rouge highlight""#),
+            "Rouge wrapper should be removed"
+        );
+        assert!(
+            result.html.contains(r#"<span class="k">use</span>"#),
+            "Highlighted spans should be preserved"
+        );
+    }
+
+    #[test]
+    fn test_transform_code_block_preserves_non_rouge() {
+        let html = r#"<pre><code>plain code</code></pre>"#;
+        let proc = processor();
+        let result = proc.process(html, None);
+
+        assert!(
+            result.html.contains("<pre><code>plain code</code></pre>"),
+            "Non-Rouge code blocks should be unchanged"
+        );
+    }
+
     // -- Table tests --------------------------------------------------------
 
     #[test]
@@ -1025,7 +1087,10 @@ mod tests {
             "Expected md-typeset__table wrapper, got: {}",
             result.html
         );
-        assert!(result.html.contains("tableblock"));
+        assert!(
+            !result.html.contains("tableblock"),
+            "Asciidoctor tableblock classes should be stripped"
+        );
     }
 
     #[test]
