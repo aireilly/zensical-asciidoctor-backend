@@ -1,0 +1,33 @@
+= Simple Test Document
+:description: A test document for integration testing
+
+== Introduction
+
+This is a simple test document.
+
+NOTE: This is a note admonition.
+
+== Code Example
+
+[source,rust]
+----
+fn main() {
+    println!("Hello"); // <1>
+}
+----
+<1> Prints a greeting
+
+== See Also
+
+See xref:other.adoc[Other Page] for more info.
+
+.A test table
+|===
+| Column 1 | Column 2
+
+| data 1
+| data 2
+|===
+
+.A test image
+image::test.png[Test image]
